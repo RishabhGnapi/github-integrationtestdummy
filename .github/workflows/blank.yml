@@ -6,6 +6,9 @@ on:
       - main
   workflow_dispatch:
     inputs:
+      testRunId:
+        description: 'Test run ID'
+        required: false
       tags:
         description: "Tags to use"
         required: false
