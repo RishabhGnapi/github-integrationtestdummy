@@ -6,14 +6,14 @@ on:
       - main
   workflow_dispatch:
     inputs:
-      request_id:         # 👈 NEW (for DB correlation)
+      request_id:         # 👈 Required for DB correlation
         description: "Unique request ID for tracking"
         required: true
       testRunId:
-        description: 'Test run ID'
+        description: "Test run ID (optional)"
         required: false
       tags:
-        description: "Tags to use"
+        description: "Tags to filter tests (optional)"
         required: false
         default: ""
 
@@ -22,9 +22,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # Checkout this repo (github-integrationtestdummy)
       - name: Checkout Your Repo
         uses: actions/checkout@v4
 
+      # Checkout Client's Repo
       - name: Checkout Client's Repo
         uses: actions/checkout@v4
         with:
@@ -32,21 +34,29 @@ jobs:
           token: ${{ secrets.CLIENT_REPO_TOKEN }}
           path: client-repo
 
+      # Install dependencies & Playwright
       - name: Install Dependencies and Playwright
         run: |
           cd client-repo
           npm install
           npx playwright install --with-deps
 
-      - name: Run Tests
+      # Run tests
+      - name: Run Playwright Tests
         run: |
           cd client-repo
-          echo "Running with tags: ${{ github.event.inputs.tags }}"
-          echo "Tracking request_id: ${{ github.event.inputs.request_id }}"
-          npx playwright test --grep "${{ github.event.inputs.tags }}"
+          echo "Running tests with tags: '${{ github.event.inputs.tags }}'"
+          echo "Tracking request_id: '${{ github.event.inputs.request_id }}'"
+          if [ -z "${{ github.event.inputs.tags }}" ]; then
+            npx playwright test
+          else
+            npx playwright test --grep "${{ github.event.inputs.tags }}"
+          fi
 
+      # Upload test results
       - name: Upload Test Results
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: test-results
+          path: client-repo/test-results || client-repo/playwright-report
