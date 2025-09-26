@@ -1,11 +1,14 @@
 name: Test Client Repo
- 
+
 on:
   push:
     branches:
       - main
   workflow_dispatch:
     inputs:
+      request_id:         # 👈 NEW (for DB correlation)
+        description: "Unique request ID for tracking"
+        required: true
       testRunId:
         description: 'Test run ID'
         required: false
@@ -13,34 +16,35 @@ on:
         description: "Tags to use"
         required: false
         default: ""
- 
+
 jobs:
   test:
     runs-on: ubuntu-latest
- 
+
     steps:
       - name: Checkout Your Repo
         uses: actions/checkout@v4
- 
+
       - name: Checkout Client's Repo
         uses: actions/checkout@v4
         with:
           repository: Mohanish-gnapitech/Onion-backend
           token: ${{ secrets.CLIENT_REPO_TOKEN }}
           path: client-repo
- 
+
       - name: Install Dependencies and Playwright
         run: |
           cd client-repo
           npm install
           npx playwright install --with-deps
- 
+
       - name: Run Tests
         run: |
           cd client-repo
           echo "Running with tags: ${{ github.event.inputs.tags }}"
+          echo "Tracking request_id: ${{ github.event.inputs.request_id }}"
           npx playwright test --grep "${{ github.event.inputs.tags }}"
- 
+
       - name: Upload Test Results
         if: always()
         uses: actions/upload-artifact@v4
